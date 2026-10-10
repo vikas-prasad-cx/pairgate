@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/vikas-prasad-cx/pairgate/spec/rank-request.schema.json",
+  "title": "RankRequest",
+  "description": "One join decision. Either rank available people for an arriving contact, or rank waiting contacts for a person who just became free.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["decisionId", "direction", "lineOfWork", "anchorId", "candidateIds", "issuedAt"],
+  "properties": {
+    "decisionId": { "type": "string", "minLength": 1 },
+    "direction": { "enum": ["AGENT_SURPLUS", "CONTACT_SURPLUS"] },
+    "lineOfWork": { "type": "string", "minLength": 1 },
+    "anchorId": {
+      "type": "string",
+      "description": "Contact id when direction is AGENT_SURPLUS. Resource id when direction is CONTACT_SURPLUS."
+    },
+    "candidateIds": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 200,
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "issuedAt": { "type": "string", "format": "date-time" },
+    "cohort": {
+      "enum": ["MATCHED", "CONTROL"],
+      "description": "CONTROL disables ranking and records the ordinary route for measurement."
+    }
+  }
+}

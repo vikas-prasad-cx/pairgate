@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/vikas-prasad-cx/pairgate/spec/interval-summary.schema.json",
+  "title": "IntervalSummary",
+  "description": "Aggregates Pairgate publishes for one staffing interval. Reeforce uses this to score schedule deltas. It contains no contact profiles and no model weights.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["intervalStart", "lineOfWork", "scarceCohorts", "breachRate", "decisions"],
+  "properties": {
+    "intervalStart": { "type": "string", "format": "date-time" },
+    "intervalMinutes": { "type": "integer", "minimum": 5, "maximum": 60, "default": 15 },
+    "lineOfWork": { "type": "string" },
+    "decisions": { "type": "integer", "minimum": 0 },
+    "breachRate": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1,
+      "description": "Share of contacts forced onto the ordinary route by the wait guard."
+    },
+    "meanWaitSeconds": { "type": "number", "minimum": 0 },
+    "guardThresholdSeconds": { "type": "number", "minimum": 0 },
+    "scarceCohorts": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/scarceCohort" }
+    },
+    "resourceCoverage": {
+      "type": "array",
+      "description": "How well each currently scheduled resource covers the scarce cohorts in this interval. Reeforce uses this to choose whom to return from a meal or offline block.",
+      "items": { "$ref": "#/$defs/resourceCoverage" }
+    }
+  },
+  "$defs": {
+    "scarceCohort": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["cohortId", "arrivalShare", "capableAvailable"],
+      "properties": {
+        "cohortId": { "type": "string" },
+        "arrivalShare": { "type": "number", "minimum": 0, "maximum": 1 },
+        "capableAvailable": { "type": "integer", "minimum": 0 },
+        "capableTarget": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "resourceCoverage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["resourceId", "coverageScore"],
+      "properties": {
+        "resourceId": { "type": "string", "description": "Same id Reeforce uses on the roster." },
+        "coverageScore": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Expected share of this interval's scarce arrivals this resource would rank first for."
+        }
+      }
+    }
+  }
+}
