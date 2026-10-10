@@ -1,0 +1,60 @@
+{
+  "name": "Pairgate",
+  "description": "Ranks one real-time join between a contact and a resource, and publishes an interval summary for a scheduling agent. Pairgate does not edit the schedule.",
+  "supportedInterfaces": [
+    {
+      "url": "https://pairgate.example/a2a/v1",
+      "protocolBinding": "JSONRPC",
+      "protocolVersion": "1.0"
+    }
+  ],
+  "provider": {
+    "organization": "Pairgate",
+    "url": "https://github.com/vikas-prasad-cx/pairgate"
+  },
+  "version": "0.1.0",
+  "documentationUrl": "https://github.com/vikas-prasad-cx/pairgate",
+  "capabilities": {
+    "streaming": false,
+    "pushNotifications": false,
+    "extendedAgentCard": false
+  },
+  "defaultInputModes": ["application/json"],
+  "defaultOutputModes": ["application/json"],
+  "skills": [
+    {
+      "id": "rank-join",
+      "name": "Rank one join",
+      "description": "Rank a capped candidate pool for one arriving contact or one newly free resource. Reads only the decision cache. Returns an ordered list or an ordinary-route order. This skill stays inside the join budget and does not call a model.",
+      "tags": ["ranking", "join", "realtime"],
+      "examples": [
+        "A contact just arrived on the care line. Rank the available people.",
+        "A person just became free. Rank the waiting contacts who are still inside the wait guard."
+      ],
+      "inputModes": ["application/json"],
+      "outputModes": ["application/json"]
+    },
+    {
+      "id": "publish-interval-summary",
+      "name": "Publish an interval summary",
+      "description": "Return the closed-interval summary for one line of work: breach rate, scarce cohorts, and resource coverage scores. A scheduling agent uses this artifact to choose a later schedule edit. The summary contains no contact profiles and no model weights.",
+      "tags": ["interval-summary", "scheduling", "coverage"],
+      "examples": [
+        "The quarter-hour just closed. Send the summary a scheduling agent can score."
+      ],
+      "inputModes": ["application/json"],
+      "outputModes": ["application/json"]
+    },
+    {
+      "id": "explain-decision",
+      "name": "Explain a completed decision",
+      "description": "After a join has already been applied, explain which cached features produced the top score. A supervisor agent may call a model here. The routing engine must not call this skill on the join path.",
+      "tags": ["explanation", "supervisor", "slow-path"],
+      "examples": [
+        "Explain decision 8f2c. Which features put this resource first?"
+      ],
+      "inputModes": ["application/json"],
+      "outputModes": ["application/json"]
+    }
+  ]
+}
