@@ -315,4 +315,13 @@ The model may also fill feature rows on the slow side. It does not load during t
 
 ## Deployment shape
 
-The ranker, the rules layer, the cache client, and the MCP and A2A adapters run in one process next to the routing engine's decision point. The adapters are how another project reaches the ranker. Training, nightly snapshots, weight proposals, and the interval publisher run elsewhere. Adding a remote call to the rank path requires a latency note; see [latency.md](latency.md).
+The ranker, the rules layer, the cache client, and the MCP and A2A adapters run next to the routing engine's decision point. The adapters are how another project reaches the ranker. Training, nightly snapshots, and weight acceptance run elsewhere. Adding a remote call to the rank path requires a latency note; see [latency.md](latency.md).
+
+The adapters in this repository are the Python modules under `python/pairgate`. Both call `decide`. An agent does not send feature rows. Those are loaded into the decision cache before the join, from a JSON file named by `PAIRGATE_CACHE`.
+
+```bash
+PYTHONPATH=python PAIRGATE_CACHE=python/decision-cache.example.json python3 -m pairgate.mcp_server
+PYTHONPATH=python PAIRGATE_CACHE=python/decision-cache.example.json PAIRGATE_PORT=8080 python3 -m pairgate.a2a
+```
+
+The MCP process speaks stdio and answers `tools/call` for `rank_join`. The A2A process serves `/.well-known/agent-card.json` and `POST /a2a/v1` with method `SendMessage`. The body of either call is the rank request. The body of the response is the rank result.

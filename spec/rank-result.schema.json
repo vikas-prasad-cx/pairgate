@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/vikas-prasad-cx/pairgate/spec/rank-result.schema.json",
+  "title": "RankResult",
+  "description": "The outcome of one join. RANKED carries an order. ORDINARY tells the routing engine to use its own fallback.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["decisionId", "disposition", "reason", "orderedCandidateIds"],
+  "properties": {
+    "decisionId": { "type": "string", "minLength": 1 },
+    "disposition": { "enum": ["RANKED", "ORDINARY"] },
+    "reason": {
+      "enum": ["RANKED", "INELIGIBLE", "CONTROL", "BREACH", "EMPTY_POOL", "NO_SCORES"]
+    },
+    "orderedCandidateIds": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "scores": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["candidateId", "score"],
+        "properties": {
+          "candidateId": { "type": "string", "minLength": 1 },
+          "score": { "type": "number", "minimum": 0, "maximum": 1 }
+        }
+      }
+    },
+    "guardThresholdSeconds": {
+      "type": ["number", "null"],
+      "minimum": 0
+    }
+  }
+}

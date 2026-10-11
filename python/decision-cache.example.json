@@ -1,0 +1,14 @@
+{
+  "bufferSeconds": 60,
+  "queueWaits": [30, 32, 28, 31, 29, 33, 30, 40],
+  "waits": {"contact-1842": 10},
+  "ineligible": ["contact-blocked"],
+  "features": {
+    "resource-22": {"outcome": 0.9},
+    "resource-14": {"outcome": 0.4},
+    "resource-7": {"outcome": 0.2}
+  },
+  "scoreCards": [
+    {"lineOfWork": "care", "modelId": "baseline", "weights": {"outcome": 1}}
+  ]
+}
