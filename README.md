@@ -100,7 +100,7 @@ The summary schema is [spec/interval-summary.schema.json](spec/interval-summary.
 
 | Document | What it settles |
 |----------|-----------------|
-| [Architecture](docs/architecture.md) | Components, caches, and the two clocks |
+| [Architecture](docs/architecture.md) | Components, the two clocks, the model, and the MCP and Agent2Agent adapters |
 | [Decision flow](docs/decision-flow.md) | Both surplus directions, eligibility, cohort, guard |
 | [Reeforce contract](docs/reeforce-contract.md) | What Reeforce may read, and how deltas should change |
 | [Latency](docs/latency.md) | What is allowed on the join path |
