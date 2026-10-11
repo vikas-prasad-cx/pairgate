@@ -1,0 +1,237 @@
+{
+  "protocolVersion": "2025-11-25",
+  "serverInfo": {
+    "name": "pairgate",
+    "version": "0.1.0",
+    "title": "Pairgate"
+  },
+  "capabilities": {
+    "tools": { "listChanged": false },
+    "resources": { "subscribe": false, "listChanged": false },
+    "prompts": { "listChanged": false }
+  },
+  "instructions": "rank_join is the only tool a routing engine may call while a contact is waiting. explain_decision and propose_weights run after the join, on a slower clock. get_interval_summary returns cohort counts and coverage scores, never contact profiles or model weights.",
+  "tools": [
+    {
+      "name": "rank_join",
+      "title": "Rank one join",
+      "description": "Rank a capped candidate pool for one arriving contact or one newly free resource. Uses the decision cache only. Returns RANKED or ORDINARY. Does not call a model and does not edit a schedule.",
+      "inputSchema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["decisionId", "direction", "lineOfWork", "anchorId", "candidateIds", "issuedAt"],
+        "properties": {
+          "decisionId": { "type": "string", "minLength": 1 },
+          "direction": { "enum": ["AGENT_SURPLUS", "CONTACT_SURPLUS"] },
+          "lineOfWork": { "type": "string", "minLength": 1 },
+          "anchorId": { "type": "string", "minLength": 1 },
+          "candidateIds": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 200,
+            "items": { "type": "string", "minLength": 1 }
+          },
+          "issuedAt": { "type": "string", "format": "date-time" },
+          "cohort": { "enum": ["MATCHED", "CONTROL"] }
+        }
+      },
+      "outputSchema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["decisionId", "disposition", "reason", "orderedCandidateIds"],
+        "properties": {
+          "decisionId": { "type": "string" },
+          "disposition": { "enum": ["RANKED", "ORDINARY"] },
+          "reason": {
+            "enum": ["RANKED", "INELIGIBLE", "CONTROL", "BREACH", "EMPTY_POOL", "NO_SCORES"]
+          },
+          "orderedCandidateIds": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "scores": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["candidateId", "score"],
+              "properties": {
+                "candidateId": { "type": "string" },
+                "score": { "type": "number", "minimum": 0, "maximum": 1 }
+              }
+            }
+          },
+          "guardThresholdSeconds": { "type": ["number", "null"], "minimum": 0 }
+        }
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "get_interval_summary",
+      "title": "Get the interval summary",
+      "description": "Return the closed-interval summary for one line of work. A scheduling agent uses it to score a later schedule edit. Contains no contact profiles and no model weights.",
+      "inputSchema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["lineOfWork", "intervalStart"],
+        "properties": {
+          "lineOfWork": { "type": "string", "minLength": 1 },
+          "intervalStart": { "type": "string", "format": "date-time" }
+        }
+      },
+      "outputSchema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["intervalStart", "lineOfWork", "scarceCohorts", "breachRate", "decisions"],
+        "properties": {
+          "intervalStart": { "type": "string", "format": "date-time" },
+          "intervalMinutes": { "type": "integer", "minimum": 5, "maximum": 60 },
+          "lineOfWork": { "type": "string" },
+          "decisions": { "type": "integer", "minimum": 0 },
+          "breachRate": { "type": "number", "minimum": 0, "maximum": 1 },
+          "meanWaitSeconds": { "type": "number", "minimum": 0 },
+          "guardThresholdSeconds": { "type": "number", "minimum": 0 },
+          "scarceCohorts": { "type": "array" },
+          "resourceCoverage": { "type": "array" }
+        }
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "explain_decision",
+      "title": "Explain a completed decision",
+      "description": "Explain a join that has already been applied, using cached feature contributions. A supervisor may attach a model narrative. The routing engine must not call this tool on the join path.",
+      "inputSchema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["decisionId"],
+        "properties": {
+          "decisionId": { "type": "string", "minLength": 1 }
+        }
+      },
+      "outputSchema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["decisionId", "featureContributions"],
+        "properties": {
+          "decisionId": { "type": "string" },
+          "topCandidateId": { "type": "string" },
+          "narrative": { "type": "string" },
+          "featureContributions": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["name", "weight", "value"],
+              "properties": {
+                "name": { "type": "string" },
+                "weight": { "type": "number", "minimum": 0 },
+                "value": { "type": "number", "minimum": 0, "maximum": 1 }
+              }
+            }
+          }
+        }
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "propose_weights",
+      "title": "Propose objective weights",
+      "description": "Propose new objective weights for one line of work from cohort results. The proposal is not live. A person or a policy accepts it before the slow side writes a score card into the cache.",
+      "inputSchema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["lineOfWork", "proposedWeights"],
+        "properties": {
+          "lineOfWork": { "type": "string", "minLength": 1 },
+          "proposedWeights": {
+            "type": "object",
+            "minProperties": 1,
+            "additionalProperties": { "type": "number", "minimum": 0 }
+          },
+          "reason": { "type": "string" },
+          "matchedOutcome": { "type": "number" },
+          "controlOutcome": { "type": "number" },
+          "decisions": { "type": "integer", "minimum": 0 }
+        }
+      },
+      "outputSchema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["lineOfWork", "proposedWeights", "status"],
+        "properties": {
+          "lineOfWork": { "type": "string" },
+          "proposedWeights": {
+            "type": "object",
+            "additionalProperties": { "type": "number", "minimum": 0 }
+          },
+          "reason": { "type": "string" },
+          "status": { "const": "PROPOSED" }
+        }
+      },
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": false
+      }
+    }
+  ],
+  "resources": [
+    {
+      "uri": "pairgate://spec/rank-request",
+      "name": "rank-request",
+      "title": "Rank request schema",
+      "description": "The JSON shape of one join decision.",
+      "mimeType": "application/schema+json"
+    },
+    {
+      "uri": "pairgate://spec/interval-summary",
+      "name": "interval-summary",
+      "title": "Interval summary schema",
+      "description": "The JSON shape a scheduling agent may read. No contact profiles and no model weights.",
+      "mimeType": "application/schema+json"
+    },
+    {
+      "uri": "pairgate://interval/{lineOfWork}/latest",
+      "name": "latest-interval",
+      "title": "Latest interval summary",
+      "description": "The most recent closed summary for a line of work.",
+      "mimeType": "application/json"
+    }
+  ],
+  "prompts": [
+    {
+      "name": "review-weight-proposal",
+      "title": "Review a weight proposal",
+      "description": "Ask a supervisor to accept or reject a proposed objective. The prompt must not include contact profiles.",
+      "arguments": [
+        { "name": "lineOfWork", "description": "Line of work the weights belong to.", "required": true },
+        { "name": "proposalJson", "description": "The PROPOSED weight document.", "required": true }
+      ]
+    }
+  ]
+}
