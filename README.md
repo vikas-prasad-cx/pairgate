@@ -105,6 +105,11 @@ The summary schema is [spec/interval-summary.schema.json](spec/interval-summary.
 | [Reeforce contract](docs/reeforce-contract.md) | What Reeforce may read, and how deltas should change |
 | [Latency](docs/latency.md) | What is allowed on the join path |
 | [Glossary](docs/glossary.md) | Terms shared with Reeforce |
+| [Using Pairgate from another project](docs/using-from-another-project.md) | MCP and Agent2Agent calls, and where a model is allowed |
+
+## Calling it from another project
+
+An assistant calls `rank_join` over the [Model Context Protocol](https://modelcontextprotocol.io/specification/2025-11-25). Another agent discovers Pairgate through an [Agent2Agent](https://a2a-protocol.org) card and sends a `rank-join` task. Neither imports this repository. The rank itself stays arithmetic on the cache. A model may fill that cache beforehand, propose weights between intervals, or explain a join that already happened. The call shapes and the boundary are in [Using Pairgate from another project](docs/using-from-another-project.md).
 
 ## Non-goals
 
