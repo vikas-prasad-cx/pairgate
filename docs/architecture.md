@@ -219,22 +219,78 @@ flowchart TB
 | Explain a finished join | A2A | skill `explain-decision` | Same explanation. The routing engine does not call it while someone is waiting. |
 | Suggest new weights | MCP | `propose_weights` | Slow side. Status stays `PROPOSED` until accepted. |
 
-An MCP host learns the tools from the server. An A2A client learns the skills from `/.well-known/agent-card.json` and sends JSON-RPC `SendMessage` to the interface URL in that card. The rank body is the rank request. The A2A data part adds `skillId` so the agent does not infer the task from prose. `ORDINARY` means the caller keeps its own fallback. A late rank is discarded.
+An MCP host learns the tools from the server. An A2A client learns the skills from `/.well-known/agent-card.json` and sends JSON-RPC `SendMessage` to the interface URL in that card. Both envelopes carry the same rank request. The A2A data part adds `skillId` so the agent does not infer the task from prose. Pairgate runs the routing decision and returns the same rank result on either protocol.
+
+## What an agent sends, and what comes back
+
+Another AI agent does not describe the join in prose and hope for a match. It sends one rank request. Pairgate answers with one rank result. The agent applies the first id in `orderedCandidateIds` when `disposition` is `RANKED`. Any other disposition means the agent keeps its own ordinary route (longest idle, next in line) and does not retry.
 
 ```mermaid
 sequenceDiagram
-  participant Host as MCP host or A2A agent
-  participant Adapter as MCP or A2A adapter
+  participant Agent as AI agent
+  participant Adapter as MCP or A2A
+  participant Rules as Eligibility, cohort, guard
   participant Rank as Ranker
   participant Cache
 
-  Host->>Adapter: rank_join or rank-join
-  Adapter->>Rank: rank request
-  Rank->>Cache: features, score card, live state
-  Cache-->>Rank: rows already resident
-  Rank-->>Adapter: RANKED or ORDINARY
-  Adapter-->>Host: ordered candidates, or ordinary-route reason
+  Agent->>Adapter: rank request
+  Adapter->>Rules: same request
+  alt ineligible, control, or wait already past the guard
+    Rules-->>Adapter: ORDINARY plus a reason
+  else eligible and inside the guard
+    Rules->>Rank: anchor and the capped candidate list
+    Rank->>Cache: features, score card, live state
+    Cache-->>Rank: rows already resident
+    Rank-->>Adapter: RANKED, highest score first
+  end
+  Adapter-->>Agent: rank result
 ```
+
+The request names the decision, which side of the surplus this is, the line of work, the anchor, and the candidate pool. `anchorId` is the arriving contact when `direction` is `AGENT_SURPLUS`, and the person who just became free when `direction` is `CONTACT_SURPLUS`. `candidateIds` is the pool to rank: available people, or waiting contacts. The pool stays capped (100–200 people, or 70–100 contacts).
+
+```json
+{
+  "decisionId": "d-1842",
+  "direction": "AGENT_SURPLUS",
+  "lineOfWork": "care",
+  "anchorId": "contact-1842",
+  "candidateIds": ["resource-14", "resource-22", "resource-7"],
+  "issuedAt": "2026-10-10T23:40:00Z",
+  "cohort": "MATCHED"
+}
+```
+
+On MCP that object is the `arguments` of `tools/call` for `rank_join`. On A2A it is the JSON data part of `SendMessage` for skill `rank-join`, with `"skillId": "rank-join"` added beside those fields.
+
+Pairgate then decides. Eligibility rejects a contact type that is outside the line of work. A control cohort is recorded and not ranked, so measurement still has an ordinary-route group. The wait guard forces an ordinary route when the wait is already past the threshold, so ranking cannot hold someone at the back of the queue. Everyone else is scored from the cache. The score uses the live score card and feature rows already in memory. No model runs on this call.
+
+The result comes back on the same call. MCP puts it in `structuredContent`. A2A puts it in the completed task's artifact data part.
+
+```json
+{
+  "decisionId": "d-1842",
+  "disposition": "RANKED",
+  "reason": "RANKED",
+  "orderedCandidateIds": ["resource-22", "resource-14", "resource-7"],
+  "scores": [
+    { "candidateId": "resource-22", "score": 0.86 },
+    { "candidateId": "resource-14", "score": 0.41 },
+    { "candidateId": "resource-7", "score": 0.22 }
+  ],
+  "guardThresholdSeconds": 96.4
+}
+```
+
+| `reason` | What the calling agent does |
+|----------|------------------------------|
+| `RANKED` | Offer `orderedCandidateIds[0]` if that candidate is still in the pool. |
+| `INELIGIBLE` | Ordinary route. This contact type is outside matching. |
+| `CONTROL` | Ordinary route. This contact is in the measurement group. |
+| `BREACH` | Ordinary route. The wait guard already fired. |
+| `EMPTY_POOL` | Ordinary route. There was nobody left to rank. |
+| `NO_SCORES` | Ordinary route. The cache had no score for this pool. |
+
+A result that misses the join budget is treated as ordinary too. The pool has moved, and applying a late order would poison the next decision. The summary and the explanation are separate calls. They are not the routing answer.
 
 ## Where the model sits
 
