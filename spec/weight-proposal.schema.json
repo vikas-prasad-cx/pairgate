@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/vikas-prasad-cx/pairgate/spec/weight-proposal.schema.json",
+  "title": "WeightProposal",
+  "description": "A suggested objective. It is not live. The decision cache changes only after status becomes ACCEPTED and the slow side writes a score card.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["lineOfWork", "proposedWeights", "status", "proposedAt"],
+  "properties": {
+    "lineOfWork": { "type": "string", "minLength": 1 },
+    "proposedWeights": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": { "type": "number", "exclusiveMinimum": 0 }
+    },
+    "reason": { "type": "string" },
+    "matchedOutcome": { "type": "number" },
+    "controlOutcome": { "type": "number" },
+    "decisions": { "type": "integer", "minimum": 0 },
+    "status": { "enum": ["PROPOSED", "ACCEPTED", "REJECTED"] },
+    "proposedAt": { "type": "string", "format": "date-time" }
+  }
+}

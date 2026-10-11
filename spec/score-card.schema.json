@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/vikas-prasad-cx/pairgate/spec/score-card.schema.json",
+  "title": "ScoreCard",
+  "description": "Live objective for one line of work. The slow side writes this into the decision cache. The join path reads it and does not change it.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["lineOfWork", "modelId", "generatedAt", "weights"],
+  "properties": {
+    "lineOfWork": { "type": "string", "minLength": 1 },
+    "modelId": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Identity of the model or baseline that produced the weights. The join path records this id and does not load the model."
+    },
+    "generatedAt": { "type": "string", "format": "date-time" },
+    "weights": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": { "type": "number", "exclusiveMinimum": 0 },
+      "description": "Feature name to weight. Every feature value on a candidate is already scaled to 0–1 in the cache."
+    }
+  }
+}
