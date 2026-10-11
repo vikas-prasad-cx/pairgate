@@ -1,0 +1,26 @@
+{
+  "jsonrpc": "2.0",
+  "id": "task-1842",
+  "method": "SendMessage",
+  "params": {
+    "message": {
+      "role": "ROLE_USER",
+      "messageId": "msg-1842",
+      "parts": [
+        {
+          "data": {
+            "skillId": "rank-join",
+            "decisionId": "d-1842",
+            "direction": "AGENT_SURPLUS",
+            "lineOfWork": "care",
+            "anchorId": "contact-1842",
+            "candidateIds": ["resource-14", "resource-22", "resource-7"],
+            "issuedAt": "2026-10-10T23:40:00Z",
+            "cohort": "MATCHED"
+          },
+          "mediaType": "application/json"
+        }
+      ]
+    }
+  }
+}
